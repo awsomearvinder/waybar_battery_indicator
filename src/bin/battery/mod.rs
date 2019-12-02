@@ -24,9 +24,7 @@ impl Battery{
         let current_now :u32 = current_now.trim().parse().unwrap();
         let capacity :u8= (charge_now as f64/charge_full as f64 * 100 as f64).round() as u8;
         let mut current_avg_array : arraydeque::ArrayDeque<[u32;ARRAY_SIZE],arraydeque::behavior::Wrapping> = arraydeque::ArrayDeque::new();
-        for _i in 0..ARRAY_SIZE as u32 {
-            current_avg_array.push_front(current_now);
-        }
+        current_avg_array.push_front(current_now);
         println!("{:?}",current_avg_array);
         Battery {
             capacity : capacity,
@@ -51,7 +49,7 @@ impl Battery{
         self.charge_full = charge_full;
         self.current_now = current_now;
         self.capacity = capacity;
-        self.current_avg = self.current_avg_array.iter().sum::<u32>() / ARRAY_SIZE as u32;
+        self.current_avg = self.current_avg_array.iter().sum::<u32>() / self.current_avg_array.len() as u32;
         self
     }
     ///Gets current current 
@@ -86,13 +84,13 @@ impl Battery{
         let mut waybarblock = waybar_server_logic::WayBarJsonObj::default();
         waybarblock.text = self.capacity.to_string();
         waybarblock.percentage = Some(self.capacity);
-        let battery_life_hours = self.charge_now as f64 / (self.current_avg as f64*100f64 * 0.01f64 ) *0.7f64;
+        let battery_life_hours = self.charge_now as f64 / self.current_avg as f64 *0.9f64;
         println!("{}",battery_life_hours);
         waybarblock.tooltip = Some(format!(
             "{capacity}% Remaining, or about {battery_life_hours:.0} hours and {battery_life_minutes:.0} minutes."
             ,capacity = self.capacity,
             battery_life_hours = battery_life_hours as u32,
-            battery_life_minutes = (battery_life_hours - battery_life_hours as u32 as f64) * 60f64, 
+            battery_life_minutes = (battery_life_hours - battery_life_hours.floor()) * 60f64, 
         ));
         waybarblock
     }
