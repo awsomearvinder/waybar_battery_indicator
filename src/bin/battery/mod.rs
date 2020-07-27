@@ -1,4 +1,4 @@
-use waybar_server_logic::{WayBarJsonObj};
+use waybar_server_logic::WayBarJsonObj;
 
 const ARRAY_SIZE :usize= 100;
 //TODO, make it work for more then just one battery. new() parameter?
@@ -22,16 +22,16 @@ impl Battery{
         let charge_full :u32= charge_full.trim().parse().unwrap();
         let current_now = Battery::read_error_corrected(&(FILE_PATH.to_string() + "current_now"));
         let current_now :u32 = current_now.trim().parse().unwrap();
-        let capacity :u8= (charge_now as f64/charge_full as f64 * 100 as f64).round() as u8;
+        let capacity :u8= (charge_now as f64/charge_full as f64 * 100f64).round() as u8;
         let mut current_avg_array : arraydeque::ArrayDeque<[u32;ARRAY_SIZE],arraydeque::behavior::Wrapping> = arraydeque::ArrayDeque::new();
         current_avg_array.push_front(current_now);
         println!("{:?}",current_avg_array);
         Battery {
-            capacity : capacity,
-            charge_now : charge_now,
-            charge_full : charge_full,
-            current_now : current_now,
-            current_avg_array : current_avg_array,
+            capacity,
+            charge_now,
+            charge_full,
+            current_now,
+            current_avg_array,
             current_avg : current_now,
         }
     }
@@ -43,7 +43,7 @@ impl Battery{
         let charge_full :u32= charge_full.trim().parse().unwrap();
         let current_now = Battery::read_error_corrected(&(FILE_PATH.to_string()+ "current_now"));
         let current_now :u32 = current_now.trim().parse().unwrap();
-        let capacity :u8= (charge_now as f64/charge_full as f64 * 100 as f64).round() as u8;
+        let capacity :u8= (charge_now as f64/charge_full as f64 * 100f64).round() as u8;
         self.current_avg_array.push_front(current_now);
         self.charge_now = charge_now;
         self.charge_full = charge_full;
@@ -52,26 +52,31 @@ impl Battery{
         self.current_avg = self.current_avg_array.iter().sum::<u32>() / self.current_avg_array.len() as u32;
         self
     }
+    #[allow(dead_code)]
     ///Gets current current 
     pub fn current_now(&mut self) -> u32 {
         Battery::update(self);
         self.current_now
     }
+    #[allow(dead_code)]
     ///Gets current capacity as percentage
     pub fn capacity(&mut self) -> u8 {
         Battery::update(self);
         self.capacity
     }
+    #[allow(dead_code)]
     ///Gets current charge level
     pub fn charge_now(&mut self) -> u32 {
         Battery::update(self);
         self.charge_now
     }
+    #[allow(dead_code)]
     ///Gets max charge level 
     pub fn charge_full (&mut self)->u32{
         Battery::update(self);
         self.charge_full
     }
+    #[allow(dead_code)]
     ///Gets average current
     pub fn current_avg(&mut self) ->u32 {
         Battery::update(self);
@@ -86,12 +91,16 @@ impl Battery{
         waybarblock.percentage = Some(self.capacity);
         let battery_life_hours = self.charge_now as f64 / self.current_avg as f64 *0.9f64;
         println!("{}",battery_life_hours);
-        waybarblock.tooltip = Some(format!(
-            "{capacity}% Remaining, or about {battery_life_hours:.0} hours and {battery_life_minutes:.0} minutes."
-            ,capacity = self.capacity,
-            battery_life_hours = battery_life_hours as u32,
-            battery_life_minutes = (battery_life_hours - battery_life_hours.floor()) * 60f64, 
-        ));
+        if self.capacity != 100 {
+            waybarblock.tooltip = Some(format!(
+                "{capacity}% Remaining, or about {battery_life_hours:.0} hours and {battery_life_minutes:.0} minutes."
+                ,capacity = self.capacity,
+                battery_life_hours = battery_life_hours as u32,
+                battery_life_minutes = (battery_life_hours - battery_life_hours.floor()) * 60f64, 
+            ));
+        } else {
+            waybarblock.tooltip=Some("At 100%, can't get accurate reading.".to_owned());
+        }
         waybarblock
     }
 
